@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
-API_URL = 'http://<REMOTE_IP>:5000/api/eleves/notes'  # Remplacez <REMOTE_IP> par l'adresse IP du serveur distant
+API_URL = 'http://10.3.1.224:5000/api/eleves/notes'  # Remplacez <REMOTE_IP> par l'adresse IP du serveur distant
 
 # Endpoint pour récupérer les notes d'un élève
 @app.route('/eleves/notes', methods=['GET'])

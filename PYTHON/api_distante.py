@@ -25,9 +25,10 @@ def get_eleve_notes():
     classe_nom = request.args.get('classe')
 
     eleve = query_db('''
-        SELECT e.ID, e.Prenom, e.Nom, e.Classe
+        SELECT e.ID, e.Prenom, e.Nom, c.Nom as Classe
         FROM Eleve e
-        WHERE e.Prenom = ? AND e.Nom = ? AND e.Classe = ?
+        JOIN Classe c ON e.ClasseID = c.ID
+        WHERE e.Prenom = ? AND e.Nom = ? AND c.Nom = ?
     ''', [prenom, nom, classe_nom], one=True)
 
     if not eleve:
