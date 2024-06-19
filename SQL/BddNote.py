@@ -4,18 +4,22 @@ import sqlite3
 conn = sqlite3.connect('BddNote.db')
 cursor = conn.cursor()
 
-# Création des tables
+# Création de la table Eleve
 cursor.execute('''
 CREATE TABLE Eleve (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL,
   Prenom TEXT NOT NULL,
   PP INTEGER NOT NULL,
-  Classe TEXT NOT NULL,
-  FOREIGN KEY (PP) REFERENCES Professeur(ID)
+  ClasseID INTEGER NOT NULL,
+  UserID INTEGER NOT NULL,
+  FOREIGN KEY (PP) REFERENCES Professeur(ID),
+  FOREIGN KEY (ClasseID) REFERENCES Classe(ID),
+  FOREIGN KEY (UserID) REFERENCES User(ID)
 )
 ''')
 
+# Création de la table NoteEleve
 cursor.execute('''
 CREATE TABLE NoteEleve (
   ID INTEGER PRIMARY KEY,
@@ -29,16 +33,21 @@ CREATE TABLE NoteEleve (
 )
 ''')
 
+# Création de la table Professeur
 cursor.execute('''
 CREATE TABLE Professeur (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL,
   Prenom TEXT NOT NULL,
-  Classe TEXT NOT NULL,
-  CheckPP BOOLEAN NOT NULL
+  ClasseID INTEGER NOT NULL,
+  CheckPP BOOLEAN NOT NULL,
+  UserID INTEGER NOT NULL,
+  FOREIGN KEY (ClasseID) REFERENCES Classe(ID),
+  FOREIGN KEY (UserID) REFERENCES User(ID)
 )
 ''')
 
+# Création de la table Matiere
 cursor.execute('''
 CREATE TABLE Matiere (
   ID INTEGER PRIMARY KEY,
@@ -46,6 +55,7 @@ CREATE TABLE Matiere (
 )
 ''')
 
+# Création de la table Bulletin
 cursor.execute('''
 CREATE TABLE Bulletin (
   ID INTEGER PRIMARY KEY,
@@ -56,6 +66,7 @@ CREATE TABLE Bulletin (
 )
 ''')
 
+# Création de la table Commentaire
 cursor.execute('''
 CREATE TABLE Commentaire (
   ID INTEGER PRIMARY KEY,
@@ -67,6 +78,14 @@ CREATE TABLE Commentaire (
   FOREIGN KEY (EleveID) REFERENCES Eleve(ID),
   FOREIGN KEY (ProfID) REFERENCES Professeur(ID),
   FOREIGN KEY (MatiereID) REFERENCES Matiere(ID)
+)
+''')
+
+# Création de la table Classe
+cursor.execute('''
+CREATE TABLE Classe (
+  ID INTEGER PRIMARY KEY,
+  Nom TEXT NOT NULL
 )
 ''')
 
