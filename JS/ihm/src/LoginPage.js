@@ -8,8 +8,10 @@ function LoginPage() {
     const navigate = useNavigate();
 
     const handleSubmit = () => {
-        if (login === 'admin' && mdp === 'admin') {
-            navigate('/dashboard');
+        if (login === 'prof' && mdp === 'prof') {
+            navigate('/dashboardProfs');
+        } else if (login === 'eleve' && mdp === 'eleve') {
+            navigate('/dashboardEleves');
         } else {
             alert('Login ou mot de passe incorrect');
         }
