@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+
 function App() {
     const [login, setLogin] = useState('');
     const [mdp, setMdp] = useState('');
+    const email = 'support-IT@gmail.com';
+    const email2 = 'support-IT@gmail.com';
+    const [open, setOpen] = React.useState(false);
 
+    const handleClickOpen = () => {
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+    };
     const handleSubmit = () => {
         // Remplacez cette partie par votre requête API
         console.log('Login:', login);
@@ -17,7 +31,7 @@ function App() {
         <Container maxWidth="sm">
             <Box my={4}>
                 <Typography variant="h4" component="h1" gutterBottom>
-                    Nom de l'app
+                    CheckNote
                 </Typography>
                 <Box my={2}>
                     <TextField
@@ -40,10 +54,28 @@ function App() {
                     </Button>
                 </Box>
             </Box>
-            <Box mt={4}>
-                <Typography variant="body1" align="center">
-                    Contact
-                </Typography>
+            <Box align="right" mt={4}>
+                <Button variant="outlined" onClick={handleClickOpen}>
+                    CONTACT
+                </Button>
+                <Dialog
+                    open={open}
+                    onClose={handleClose}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">
+                        {"Use Google's location service?"}
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            mail
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>FERMER</Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
         </Container>
     );
