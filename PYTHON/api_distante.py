@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import sqlite3
 
 app = Flask(__name__)
-DATABASE = 'ecole.db'  # Chemin vers votre base de données SQLite
+DATABASE = 'BddNote.db'  # Chemin vers votre base de données SQLite
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -32,7 +32,7 @@ def get_eleve_notes():
     ''', [prenom, nom, classe_nom], one=True)
 
     if not eleve:
-        return jsonify({'erreur': 'Élève non trouvé'}), 404
+        return jsonify({'erreur': 'Eleve non trouve'}), 404
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom

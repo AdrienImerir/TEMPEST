@@ -14,8 +14,9 @@ def get_eleve_notes():
     response = requests.get(API_URL, params={'prenom': prenom, 'nom': nom, 'classe': classe_nom})
 
     if response.status_code == 404:
-        return jsonify({'erreur': 'Élève non trouvé'}), 404
-
+        
+        return jsonify({'erreur': 'Eleve non trouve'}), 404
+    print(response.json())    
     return jsonify(response.json())
 
 if __name__ == '__main__':
