@@ -3,8 +3,8 @@ import sqlite3
 import logging
 
 app = Flask(__name__)
-DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddNote.db'
-#DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+#DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddNote.db'
+DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
 
 # Configurez le logging
 logging.basicConfig(level=logging.DEBUG)
@@ -142,8 +142,8 @@ def valider_bulletin():
     conn.close()
     
 
-    logging.debug("Bulletin validé avec succes.")
-    return jsonify({'message': 'Bulletin validé avec succes.'}), 200
+    logging.debug("Bulletin valide avec succes.")
+    return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
 
 if __name__ == '__main__':
