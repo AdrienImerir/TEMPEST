@@ -17,6 +17,10 @@ function LoginPage() {
         }
     };
 
+    const handleContactClick = () => {
+        navigate('/contact');
+    };
+
     return (
         <Container maxWidth="sm">
             <Box my={4}>
@@ -46,9 +50,11 @@ function LoginPage() {
                     </Box>
                 </Box>
             </Box>
-            <Box mt={4}>
+            <Box mt={4} display="flex" justifyContent="center">
                 <Typography variant="body1" align="center">
-                    Contact
+                    <Button variant="text" color="primary" onClick={handleContactClick}>
+                        Contact
+                    </Button>
                 </Typography>
             </Box>
         </Container>
