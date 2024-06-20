@@ -81,9 +81,9 @@ def auth_session():
 
 @app.route('/home_fake', methods=['GET'])
 def home_page():
-    # Check if the user is authenticated
-    if 'username' not in session:
-        return jsonify({'erreur': 'Non authentifie'}), 401
+    # Securely check if the user is authenticated
+    if 'username' not in session or session['username'] is None:
+        return jsonify({'status': '0', 'message': 'Utilisateur non connecté'}), 401
 
     # if user is authentificated, show a message
     return jsonify({'status': '1', 'message': 'Bienvenue sur la page d\'accueil'})
@@ -91,21 +91,22 @@ def home_page():
 
 @app.route('/api/isloggedin', methods=['GET'])
 def is_user_loggedin():
-    if 'username' in session:
-        return jsonify({'status': '1', 'message': 'Utilisateur connecté'})
+    if 'username' in session and session['username'] is not None:
+        return jsonify({'status': '1', 'message': 'Utilisateur connecté'}), 200
     else:
-        return jsonify({'status': '0', 'message': 'Utilisateur non connecté'})
+        return jsonify({'status': '0', 'message': 'Utilisateur non connecté'}), 401
 
 
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
     # Securely check if the user is authenticated
-    if 'username' not in session:
-        return jsonify({'erreur': 'Non authentifie'}), 401
+    if 'username' not in session or session['username'] is None:
+        return jsonify({'status': '0', 'message': 'Utilisateur non connecté'}), 401
 
+    # Get the prenom and nom from the request
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    
+
     logging.debug(f"Reçu les paramètres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
@@ -119,7 +120,8 @@ def get_eleve_notes():
         logging.debug("Eleve non trouvé")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(
+        f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -131,7 +133,8 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
+                   'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
