@@ -16,6 +16,6 @@ function App() {
             </Routes>
         </Router>
     );
-}
+} // Fin de la fonction App
 
 export default App;
