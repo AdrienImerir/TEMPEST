@@ -1,9 +1,11 @@
 import hashlib
 from flask import Flask, request, jsonify, session
+from flask_cors import CORS 
 import sqlite3
 import logging
 
 app = Flask(__name__)
+CORS(app)  # Cette ligne permet d'ajouter les politiques CORS
 
 app.config.update(
     DEBUG=True,
@@ -59,12 +61,7 @@ def query_db(query, db_sel, args=(), one=False):
 #################################################################################################################################################
 # Gestion des Notes
 #################################################################################################################################################
-@app.after_request
-def apply_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    return response
+
 
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
