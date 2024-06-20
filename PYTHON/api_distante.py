@@ -54,7 +54,6 @@ def query_db(query, db_sel, args=(), one=False):
     logging.debug(f"Executed query: {query}")
     logging.debug(f"With args: {args}")
     logging.debug(f"Returned rows: {rv}")
-
     return (rv[0] if rv else None) if one else rv
 
 
@@ -106,7 +105,7 @@ def get_eleve_notes():
 
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-
+    
     logging.debug(f"Reçu les paramètres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
@@ -120,8 +119,7 @@ def get_eleve_notes():
         logging.debug("Eleve non trouvé")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(
-        f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -133,8 +131,7 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
-                   'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
