@@ -17,25 +17,20 @@ import {
     Tab,
 } from '@mui/material';
 
-function DashboardProfs() {
+function DashboardClass() {
     const navigate = useNavigate();
     const [tabIndex, setTabIndex] = useState(0);
 
-    const initialClasses = [
-        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', note: 85 }, { id: 2, name: 'Jane Doe', note: 90 }, { id: 3, name: 'Sam Smith', note: 78 }] },
-        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', note: 88 }, { id: 5, name: 'Bob Brown', note: 82 }, { id: 6, name: 'Charlie Black', note: 91 }] },
-        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', note: 79 }, { id: 8, name: 'Eve Green', note: 85 }, { id: 9, name: 'Frank Blue', note: 89 }] }
-    ];
+    const [newNote, setNewNote] = useState([]);
 
-    const initialClassesProf = {
-        classes: [
-            "3°A","3°B","3°C","5°B"
-        ]
-    }
+    const initialClasses = [
+        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', note:[ 85, 66, 35] }, { id: 2, name: 'Jane Doe', note:[ 90,66, 35] }, { id: 3, name: 'Sam Smith', note:[ 78,66, 35] }] },
+        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', note:[ 88,66, 35] }, { id: 5, name: 'Bob Brown', note:[ 82,66, 35] }, { id: 6, name: 'Charlie Black', note:[ 91,66, 35] }] },
+        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', note:[ 79,66, 35] }, { id: 8, name: 'Eve Green', note:[ 85,66, 35] }, { id: 9, name: 'Frank Blue', note:[ 89,66, 35] }] }
+    ];
 
     const [classes, setClasses] = useState(initialClasses);
 
-    const [classesProf, setClassesProf]= useState(initialClassesProf)
     const handleNoteChange = (classId, studentId, newNote) => {
         setClasses((prevClasses) =>
             prevClasses.map((classData) =>
@@ -49,21 +44,28 @@ function DashboardProfs() {
                     : classData
             )
         );
-    };
-
-    const handleChangeToClass = (classe) => {
-            if(classe === "3°A"){
-            navigate('/dashboardClasses');
-            }
-            else if(classe === "3°B"){
-            navigate('/dashboardVertical');
-            }
-            
+        alert(classes[0].students[0].note);
     };
 
     const handleNoteBlur = (classId, studentId, newNote) => {
         // Sauvegarde de la note dans le JSON
         console.log('Saving note:', classId, studentId, newNote);
+        let addedNote = false;
+        setNewNote((newNote) => {
+            newNote.map((studentNote) =>{
+                if(studentNote.student===studentId){
+                    studentNote.note=newNote;
+                    addedNote = true;
+                }
+            });
+            if(!addedNote){
+                newNote.push({
+                   student: studentId,
+                   note: newNote 
+                })
+            }
+    })
+
         // Ici vous pouvez ajouter la logique pour sauvegarder les données, par exemple une requête API
     };
 
@@ -75,6 +77,9 @@ function DashboardProfs() {
         setTabIndex(newValue);
     };
 
+    const handleValidation = () => {
+        
+    };
     return (
         <Container maxWidth="md">
             <Box my={4}>
@@ -86,27 +91,43 @@ function DashboardProfs() {
                         <Tab key={index} label={classData.name} />
                     ))}
                 </Tabs>
-                    <TabPanel>
+                {classes.map((classData, index) => (
+                    <TabPanel key={index} value={tabIndex} index={index}>
                         <TableContainer component={Paper}>
                             <Table>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Classes</TableCell>
+                                        <TableCell>Nom</TableCell>  
+                                        {classData.students.map((note) =>(
+                                            <TableCell>Notes</TableCell>
+                                        ))}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {classesProf.classes.map((classe) => (
-                                        <TableRow key={classe}>
-                                            <TableCell><Button variant="contained" color="secondary" value={classe} onClick={() => handleChangeToClass(classe)}>{classe}</Button></TableCell>
+                                    {classData.students.map((student) => (
+                                        <TableRow key={student.id}>
+                                            <TableCell>{student.name}</TableCell>
+                                            {student.note.map((notesing) => (
+                                                <TableCell>{notesing}</TableCell>
+                                            ))}
+                                            <TableCell>
+                                                <TextField
+                                                    onBlur={(e) => handleNoteBlur(classData.id, student.id, e.target.value)}
+                                                />
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </TableContainer>
                     </TabPanel>
+                ))}
                 <Box display="flex" justifyContent="center" mt={2}>
                     <Button variant="contained" color="secondary" onClick={handleLogout}>
                         Déconnexion
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleValidation}>
+                        Valider note
                     </Button>
                 </Box>
             </Box>
@@ -130,4 +151,4 @@ function TabPanel(props) {
     );
 }
 
-export default DashboardProfs;
+export default DashboardClass;
