@@ -29,16 +29,15 @@ def query_db(query, args=(), one=False):
 def get_eleve_notes():
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    classe_nom = request.args.get('classe')
-
-    logging.debug(f"Reçu les paramètres - Prenom: {prenom}, Nom: {nom}, Classe: {classe_nom}")
+    
+    logging.debug(f"Reçu les paramètres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
         SELECT e.ID, e.Prenom, e.Nom, c.Nom as Classe
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
-        WHERE e.Prenom = ? AND e.Nom = ? AND c.Nom = ?
-    ''', [prenom, nom, classe_nom], one=True)
+        WHERE e.Prenom = ? AND e.Nom = ?
+    ''', [prenom, nom], one=True)
 
     if not eleve:
         logging.debug("Eleve non trouvé")
