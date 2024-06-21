@@ -96,8 +96,7 @@ def get_eleve_notes():
         logging.debug("Eleve non trouvé")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {
-    eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -109,8 +108,7 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {
-    note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
