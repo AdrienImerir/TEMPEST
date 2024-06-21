@@ -21,6 +21,7 @@ import {
     DialogContentText,
     DialogTitle
 } from '@mui/material';
+import Header from "./Header";
 
 function DashboardProfs() {
     const navigate = useNavigate();
@@ -75,14 +76,14 @@ function DashboardProfs() {
                 return response.json();
             })
             .then(data => {
-                const formattedClasses = data.map(classe => ({
-                    id: classe.ClasseID,
-                    name: classe.Nom,
-                    students: classe.Eleves.map(eleve => ({
-                        id: eleve.ID,
-                        name: `${eleve.Prenom} ${eleve.Nom}`,
-                        notes: eleve.Notes.map(note => note.Note)
-                    }))
+                const formattedClasses = data.map(item => ({
+                    id: item.eleve.classe_id,
+                    name: item.eleve.classe,
+                    students: [{
+                        id: item.eleve.id,
+                        name: `${item.eleve.prenom} ${item.eleve.nom}`,
+                        notes: item.notes.map(note => note.note)
+                    }]
                 }));
                 setClasses(formattedClasses);
             })
@@ -101,16 +102,6 @@ function DashboardProfs() {
 
     const handleNoteBlur = (classId, studentId, note) => {
         console.log('Saving note:', classId, studentId, note);
-    };
-
-    const handleLogout = () => {
-        fetch('http://10.3.1.224:5000/api/logout')
-            .then(() => {
-                navigate('/');
-            })
-            .catch(error => {
-                console.error('There was an error logging out!', error);
-            });
     };
 
     const handleTabChange = (event, newValue) => {
@@ -168,31 +159,10 @@ function DashboardProfs() {
         setSelectedStudent(null);
     };
 
-    const handleBulletinValidation = () => {
-        const requestBody = {
-            prof_id: profId,
-            classe_id: classes[tabIndex].id
-        };
-
-        fetch('http://10.3.1.224:5000/api/bulletin/valider', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Bulletin validated successfully:', data);
-                handleCloseDialog();
-            })
-            .catch(error => {
-                console.error('There was an error validating the bulletin!', error);
-            });
-    };
 
     return (
-        <Container maxWidth="md">
+        <Container>
+            <Header appName="Scolar Sphère" logoSrc="/path/to/logo.png" />
             <Box my={4}>
                 <Typography variant="h4" component="h1" gutterBottom>
                     Tableau de bord
@@ -242,10 +212,7 @@ function DashboardProfs() {
                     </TabPanel>
                 ))}
                 <Box display="flex" justifyContent="center" mt={2}>
-                    <Button variant="contained" color="secondary" onClick={handleLogout}>
-                        Déconnexion
-                    </Button>
-                    <Button variant="contained" color="primary" onClick={handleValidation}>
+                    <Button variant="contained" color="secondary" onClick={handleValidation}>
                         Valider notes
                     </Button>
                 </Box>
@@ -281,11 +248,8 @@ function DashboardProfs() {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog} color="primary">
+                    <Button onClick={handleCloseDialog} color="secondary">
                         Fermer
-                    </Button>
-                    <Button onClick={handleBulletinValidation} color="primary">
-                        Valider le bulletin
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -13,6 +13,7 @@ import {
     Paper,
     Button,
 } from '@mui/material';
+import Header from "./Header";
 
 function DashboardEleves() {
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ function DashboardEleves() {
 
         const user = JSON.parse(localStorage.getItem('user'));
 
-        fetch(`http://localhost:5000/api/eleves/notes?prenom=${user.prenom}&nom=${user.nom}`, {
+        fetch(`http://10.3.1.224:5000/api/eleves/notes?prenom=${user.prenom}&nom=${user.nom}`, {
             method: 'GET',
             credentials: 'same-origin' // Inclure les cookies de session
         })
@@ -65,20 +66,15 @@ function DashboardEleves() {
             });
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
-        fetch('http://localhost:5000/api/logout', { method: 'GET', credentials: 'include' });
-        navigate('/');
-    };
-
     return (
-        <Container maxWidth="md">
+        <Container>
+            <Header appName="Scolar Sphère" logoSrc="/path/to/logo.png" />
             <Box my={4}>
                 <Typography variant="h4" component="h1" gutterBottom>
                     Tableau de bord de l'élève
                 </Typography>
                 <Box display="flex" justifyContent="center" mt={2} mb={2}>
-                    <Button variant="contained" color="primary" onClick={handleFetchData}>
+                    <Button variant="contained" color="secondary" onClick={handleFetchData}>
                         Charger les données
                     </Button>
                 </Box>
@@ -112,11 +108,6 @@ function DashboardEleves() {
                         </Table>
                     </TableContainer>
                 )}
-                <Box display="flex" justifyContent="center" mt={2}>
-                    <Button variant="contained" color="secondary" onClick={handleLogout}>
-                        Déconnexion
-                    </Button>
-                </Box>
             </Box>
         </Container>
     );

@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LoginPage from './LoginPage';
 import DashboardEleves from './DashboardEleves';
 import ContactPage from './ContactPage';
-import DashboardProfs from "./DashboardProfs"; // Assurez-vous que le chemin est correct
+import DashboardProfs from "./DashboardProfs";
+import DashboardAdmin from "./DashboardAdmin";
 
 function App() {
     return (
@@ -12,7 +13,8 @@ function App() {
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/dashboardEleves" element={<DashboardEleves />} />
-                <Route path="/DashboardProfs" element={<DashboardProfs />} />
+                <Route path="/dashboardProfs" element={<DashboardProfs />} />
+                <Route path="/dashboardAdmin" element={<DashboardAdmin />} />
             </Routes>
         </Router>
     );

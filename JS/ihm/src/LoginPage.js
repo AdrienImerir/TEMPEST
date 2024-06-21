@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
+import Header from "./Header";
 
 function LoginPage() {
     const [login, setLogin] = useState('');
@@ -9,7 +10,7 @@ function LoginPage() {
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
-        const response = await fetch('http://localhost:5000/api/auth', {
+        const response = await fetch('http://10.3.1.224:5000/api/auth', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -41,34 +42,34 @@ function LoginPage() {
     };
 
     return (
-        <Container maxWidth="sm">
+        <Container>
+            <Header appName="Scolar Sphère" logoSrc="/path/to/logo.png" />
             <Box my={4}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    Nom de l'app
-                </Typography>
                 <Box my={2}>
-                    <TextField
-                        label="Login"
-                        fullWidth
-                        value={login}
-                        onChange={(e) => setLogin(e.target.value)}
-                        margin="normal"
-                    />
-                    <TextField
-                        label="Mot de passe"
-                        type="password"
-                        fullWidth
-                        value={mdp}
-                        onChange={(e) => setMdp(e.target.value)}
-                        margin="normal"
-                    />
-                    {error && (
-                        <Typography color="error" variant="body2" align="center" gutterBottom>
-                            {error}
-                        </Typography>
-                    )}
+                    <Box maxWidth={400} mx="auto">
+                        <TextField
+                            label="Login"
+                            fullWidth
+                            value={login}
+                            onChange={(e) => setLogin(e.target.value)}
+                            margin="normal"
+                        />
+                        <TextField
+                            label="Mot de passe"
+                            type="password"
+                            fullWidth
+                            value={mdp}
+                            onChange={(e) => setMdp(e.target.value)}
+                            margin="normal"
+                        />
+                        {error && (
+                            <Typography color="error" variant="body2" align="center" gutterBottom>
+                                {error}
+                            </Typography>
+                        )}
+                    </Box>
                     <Box display="flex" justifyContent="center" mt={2}>
-                        <Button variant="contained" color="primary" onClick={handleSubmit}>
+                        <Button variant="contained" color="secondary" onClick={handleSubmit}>
                             Valider
                         </Button>
                     </Box>
@@ -76,7 +77,7 @@ function LoginPage() {
             </Box>
             <Box mt={4} display="flex" justifyContent="center">
                 <Typography variant="body1" align="center">
-                    <Button variant="text" color="primary" onClick={handleContactClick}>
+                    <Button variant="text" color="info" onClick={handleContactClick}>
                         Contact
                     </Button>
                 </Typography>
