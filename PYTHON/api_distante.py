@@ -288,6 +288,7 @@ def valider_bulletin():
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
 
+
 @app.route('/api/professeur/notes', methods=['GET'])
 def get_professeur_notes():
     username = request.args.get('username')
@@ -304,7 +305,7 @@ def get_professeur_notes():
 
     prof = query_db('''
         SELECT ID FROM Professeur WHERE LOWER(Prenom) = ? AND LOWER(Nom) = ?
-    ''', "note", [prenom, nom], one=True)
+    ''', "note", [prenom.lower(), nom.lower()], one=True)
 
     if not prof:
         logging.debug("Professeur non trouvé")
@@ -327,10 +328,34 @@ def get_professeur_notes():
 
     logging.debug(f"Notes trouvées pour le ProfID {prof_id}: {notes}")
 
-    notes_data = [{'eleve_prenom': note['ElevePrenom'], 'eleve_nom': note['EleveNom'],
-                   'matiere': note['Matiere'], 'classe': note['Classe'], 'note': note['Notes']} for note in notes]
+    # Structurer les notes par élève et par matière
+    eleves_notes = {}
+    for note in notes:
+        eleve_key = f"{note['ElevePrenom']} {note['EleveNom']}"
+        if eleve_key not in eleves_notes:
+            eleves_notes[eleve_key] = {
+                'prenom': note['ElevePrenom'],
+                'nom': note['EleveNom'],
+                'classe': note['Classe'],
+                'notes': {}
+            }
+        if note['Matiere'] not in eleves_notes[eleve_key]['notes']:
+            eleves_notes[eleve_key]['notes'][note['Matiere']] = []
+        eleves_notes[eleve_key]['notes'][note['Matiere']].append(note['Notes'])
 
-    return jsonify({'notes': notes_data})
+    # Convertir les notes en liste de dictionnaires pour chaque élève
+    eleves_notes_list = []
+    for eleve, details in eleves_notes.items():
+        notes_list = [{'matiere': matiere, 'notes': notes} for matiere, notes in details['notes'].items()]
+        eleves_notes_list.append({
+            'prenom': details['prenom'],
+            'nom': details['nom'],
+            'classe': details['classe'],
+            'notes': notes_list
+        })
+
+    return jsonify({'notes': eleves_notes_list})
+
 #################################################################################################################################################
 # Gestion des logins et registers
 #################################################################################################################################################
