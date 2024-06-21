@@ -192,6 +192,30 @@ def valider_bulletin():
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
+@app.route('/api/professeur/classes', methods=['GET'])
+def get_classes_professeur():
+    prof_id = request.args.get('prof_id')
+    
+    logging.debug(f"Reçu le paramètre - ProfID: {prof_id}")
+
+    classes = query_db('''
+        SELECT c.ID, c.Nom
+        FROM Classe c
+        JOIN Professeur p ON c.ID = p.ClasseID
+        WHERE p.ID = ?
+    ''', [prof_id])
+
+    if not classes:
+        logging.debug("Aucune classe trouvée pour ce professeur")
+        return jsonify({'erreur': 'Aucune classe trouvée pour ce professeur'}), 404
+
+    logging.debug(f"Classes trouvées pour le ProfID {prof_id}: {classes}")
+
+    classes_data = [{'id': classe['ID'], 'nom': classe['Nom']} for classe in classes]
+
+    return jsonify({'classes': classes_data})
+
+
 #################################################################################################################################################
 # Gestion des logins et registers
 #################################################################################################################################################
