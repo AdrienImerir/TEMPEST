@@ -66,26 +66,34 @@ def query_db(query, db_sel, args=(), one=False):
 
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
+    logging.debug(f"Session: {session}")
+    # if 'username' not in session:
+    #    logging.debug("User not authenticated")
+    #    return jsonify({'erreur': 'Non authentifie'}), 401
+
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    
-    logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
+    username = session.get('username')
+    role = session.get('role')  # Assuming you store the role in the session
 
-    # Rechercher l'élève par prénom et nom
+    logging.debug(f"Session Username: {username}")
+    logging.debug(f"Session Role: {role}")
+
+    logging.debug(f"Reçu les paramètres - Prénom: {prenom}, Nom: {nom}")
+
     eleve = query_db('''
         SELECT e.ID, e.Prenom, e.Nom, c.ID as ClasseID, c.Nom as Classe
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
         WHERE LOWER(e.Prenom) = ? AND LOWER(e.Nom) = ?
-    ''', "note", [prenom, nom], one=True)
+    ''', "note", [prenom.lower(), nom.lower()], one=True)
 
     if not eleve:
-        logging.debug("Eleve non trouvé")
-        return jsonify({'erreur': 'Eleve non trouve'}), 404
+        logging.debug("Élève non trouvé")
+        return jsonify({'erreur': 'Élève non trouvé'}), 404
 
-    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Élève trouvé - ID: {eleve['ID']}, Prénom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
-    # Récupérer les notes de l'élève
     notes = query_db('''
         SELECT n.Notes, m.ID as MatiereID, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
         FROM NoteEleve n
@@ -97,6 +105,9 @@ def get_eleve_notes():
     logging.debug(f"Notes récupérées: {notes}")
 
     notes_data = []
+    notes_min_data = []
+    notes_max_data = []
+    commentaires_data = []
 
     for note in notes:
         matiere_id = note['MatiereID']
@@ -113,15 +124,27 @@ def get_eleve_notes():
         commentaire = query_db('''
             SELECT c.Commentaire
             FROM Commentaire c
-            WHERE c.EleveID = ? AND c.MatiereID = ? AND c.ProfID = ?
-        ''', "note", [eleve['ID'], matiere_id, note['ProfesseurNom']], one=True)
+            WHERE c.EleveID = ? AND c.MatiereID = ? AND c.ProfID = (SELECT ID FROM Professeur WHERE Nom = ? AND Prenom = ?)
+        ''', "note", [eleve['ID'], matiere_id, note['ProfesseurNom'], note['ProfesseurPrenom']], one=True)
 
         notes_data.append({
             'matiere': note['Matiere'],
             'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
-            'note': note['Notes'],
-            'note_min': stats['MinNote'],
-            'note_max': stats['MaxNote'],
+            'note': note['Notes']
+        })
+
+        notes_min_data.append({
+            'matiere': note['Matiere'],
+            'note_min': stats['MinNote']
+        })
+
+        notes_max_data.append({
+            'matiere': note['Matiere'],
+            'note_max': stats['MaxNote']
+        })
+
+        commentaires_data.append({
+            'matiere': note['Matiere'],
             'commentaire': commentaire['Commentaire'] if commentaire else None
         })
 
@@ -131,7 +154,10 @@ def get_eleve_notes():
             'nom': eleve['Nom'],
             'classe': eleve['Classe']
         },
-        'notes': notes_data
+        'notes': notes_data,
+        'notes_min': notes_min_data,
+        'notes_max': notes_max_data,
+        'commentaires': commentaires_data
     })
 
 
