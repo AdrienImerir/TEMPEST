@@ -48,16 +48,7 @@ function DashboardEleves() {
                 if (data.erreur) {
                     throw new Error(data.erreur);
                 }
-                const formattedData = data.notes.map((note, index) => ({
-                    id: index + 1,
-                    subject: note.matiere,
-                    maxNote: 20,
-                    classNote: 15,
-                    studentNote: note.note,
-                    minNote: 10,
-                    appreciation: 'Bien',
-                }));
-                setData(formattedData);
+                setData(data.notes);
                 setIsLoading(false);
             })
             .catch(error => {
@@ -85,7 +76,6 @@ function DashboardEleves() {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>ID</TableCell>
                                     <TableCell>Matière</TableCell>
                                     <TableCell>Note Max Classe</TableCell>
                                     <TableCell>Note Élève</TableCell>
@@ -94,12 +84,11 @@ function DashboardEleves() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {data.map((row) => (
-                                    <TableRow key={row.id}>
-                                        <TableCell>{row.id}</TableCell>
-                                        <TableCell>{row.subject}</TableCell>
+                                {data.map((row, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{row.matiere}</TableCell>
                                         <TableCell>{row.maxNote}</TableCell>
-                                        <TableCell>{row.studentNote}</TableCell>
+                                        <TableCell>{row.note}</TableCell>
                                         <TableCell>{row.minNote}</TableCell>
                                         <TableCell>{row.appreciation}</TableCell>
                                     </TableRow>
