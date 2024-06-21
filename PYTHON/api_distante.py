@@ -200,6 +200,48 @@ def valider_bulletin():
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
+@app.route('/api/professeur/notes', methods=['GET'])
+def get_professeur_notes():
+    username = request.args.get('username')
+
+    if not username:
+        return jsonify({'erreur': 'Username non fourni'}), 400
+
+    try:
+        prenom, nom = username.split('.')
+    except ValueError:
+        return jsonify({'erreur': 'Format de username incorrect'}), 400
+
+    logging.debug(f"Reçu les paramètres - Prénom: {prenom}, Nom: {nom}")
+
+    prof = query_db('''
+        SELECT ID FROM Professeur WHERE Prenom = ? AND Nom = ?
+    ''', "note", [prenom, nom], one=True)
+
+    if not prof:
+        logging.debug("Professeur non trouvé")
+        return jsonify({'erreur': 'Professeur non trouvé'}), 404
+
+    prof_id = prof['ID']
+
+    notes = query_db('''
+        SELECT n.Notes, e.Prenom as ElevePrenom, e.Nom as EleveNom, m.Nom as Matiere, c.Nom as Classe
+        FROM NoteEleve n
+        JOIN Eleve e ON n.EleveID = e.ID
+        JOIN Matiere m ON n.MatiereID = m.ID
+        JOIN Classe c ON e.ClasseID = c.ID
+        WHERE n.ProfID = ?
+    ''', "note", [prof_id])
+
+    if not notes:
+        logging.debug("Aucune note trouvée pour ce professeur")
+        return jsonify({'erreur': 'Aucune note trouvée pour ce professeur'}), 404
+
+    logging.debug(f"Notes trouvées pour le ProfID {prof_id}: {notes}")
+
+    notes_data = [{'eleve_prenom': note['ElevePrenom'], 'eleve_nom': note['EleveNom'], 'matiere': note['Matiere'], 'classe': note['Classe'], 'note': note['Notes']} for note in notes]
+
+    return jsonify({'notes': notes_data})
 #################################################################################################################################################
 # Gestion des logins et registers
 #################################################################################################################################################
