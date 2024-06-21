@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -20,11 +20,23 @@ function DashboardEleves() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || user.role !== 'Eleve') {
+            navigate('/');
+        }
+    }, [navigate]);
+
     const handleFetchData = () => {
         setIsLoading(true);
         setError(null);
 
-        fetch('http://10.3.1.224:5000/api/eleves/notes?prenom=John&nom=Doe')
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        fetch(`http://localhost:5000/api/eleves/notes?prenom=${user.prenom}&nom=${user.nom}`, {
+            method: 'GET',
+            credentials: 'same-origin' // Inclure les cookies de session
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -32,17 +44,17 @@ function DashboardEleves() {
                 return response.json();
             })
             .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
+                if (data.erreur) {
+                    throw new Error(data.erreur);
                 }
                 const formattedData = data.notes.map((note, index) => ({
                     id: index + 1,
                     subject: note.matiere,
-                    maxNote: 20, // Si vous avez des valeurs spécifiques, utilisez-les
-                    classNote: 15, // Si vous avez des valeurs spécifiques, utilisez-les
+                    maxNote: 20,
+                    classNote: 15,
                     studentNote: note.note,
-                    minNote: 10, // Si vous avez des valeurs spécifiques, utilisez-les
-                    appreciation: 'Bien', // Si vous avez des valeurs spécifiques, utilisez-les
+                    minNote: 10,
+                    appreciation: 'Bien',
                 }));
                 setData(formattedData);
                 setIsLoading(false);
@@ -54,6 +66,8 @@ function DashboardEleves() {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('user');
+        fetch('http://localhost:5000/api/logout', { method: 'GET', credentials: 'include' });
         navigate('/');
     };
 

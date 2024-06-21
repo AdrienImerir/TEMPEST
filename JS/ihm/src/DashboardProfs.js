@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -15,64 +15,180 @@ import {
     Button,
     Tabs,
     Tab,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle
 } from '@mui/material';
 
 function DashboardProfs() {
     const navigate = useNavigate();
     const [tabIndex, setTabIndex] = useState(0);
+    const [newNotes, setNewNotes] = useState({});
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [classes, setClasses] = useState([]);
+    const [profId, setProfId] = useState(1); // ID du professeur, à ajuster selon votre logique d'authentification
 
-    const initialClasses = [
-        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', note: 85 }, { id: 2, name: 'Jane Doe', note: 90 }, { id: 3, name: 'Sam Smith', note: 78 }] },
-        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', note: 88 }, { id: 5, name: 'Bob Brown', note: 82 }, { id: 6, name: 'Charlie Black', note: 91 }] },
-        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', note: 79 }, { id: 8, name: 'Eve Green', note: 85 }, { id: 9, name: 'Frank Blue', note: 89 }] }
+    // Données fictives
+    const fallbackClasses = [
+        {
+            id: 1, name: 'Classe A', students: [
+                { id: 1, name: 'John Doe', notes: [12, 18, 14] },
+                { id: 2, name: 'Jane Doe', notes: [19, 16, 15] },
+                { id: 3, name: 'Sam Smith', notes: [17, 13, 15] },
+                { id: 10, name: 'Chris Evans', notes: [15, 14, 19] },
+                { id: 11, name: 'Mark Ruffalo', notes: [14, 18, 17] },
+                { id: 12, name: 'Scarlett Johansson', notes: [13, 12, 15] }
+            ]
+        },
+        {
+            id: 2, name: 'Classe B', students: [
+                { id: 4, name: 'Alice Jones', notes: [16, 11, 13] },
+                { id: 5, name: 'Bob Brown', notes: [18, 16, 14] },
+                { id: 6, name: 'Charlie Black', notes: [19, 17, 15] },
+                { id: 13, name: 'Paul Rudd', notes: [16, 14, 13] },
+                { id: 14, name: 'Jeremy Renner', notes: [17, 13, 18] },
+                { id: 15, name: 'Chris Hemsworth', notes: [18, 16, 19] }
+            ]
+        },
+        {
+            id: 3, name: 'Classe C', students: [
+                { id: 7, name: 'David White', notes: [20, 15, 15] },
+                { id: 8, name: 'Eve Green', notes: [18, 17, 16] },
+                { id: 9, name: 'Frank Blue', notes: [19, 16, 14] },
+                { id: 16, name: 'Tom Holland', notes: [17, 14, 19] },
+                { id: 17, name: 'Benedict Cumberbatch', notes: [18, 15, 13] },
+                { id: 18, name: 'Brie Larson', notes: [19, 16, 18] }
+            ]
+        }
     ];
 
-    const initialClassesProf = {
-        classes: [
-            "3°A","3°B","3°C","5°B"
-        ]
-    }
+    useEffect(() => {
+        // Remplacez par l'URL de votre API et les paramètres appropriés
+        fetch('http://10.3.1.224:5000/api/eleves/notes?prenom=John&nom=Doe')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const formattedClasses = data.map(classe => ({
+                    id: classe.ClasseID,
+                    name: classe.Nom,
+                    students: classe.Eleves.map(eleve => ({
+                        id: eleve.ID,
+                        name: `${eleve.Prenom} ${eleve.Nom}`,
+                        notes: eleve.Notes.map(note => note.Note)
+                    }))
+                }));
+                setClasses(formattedClasses);
+            })
+            .catch(error => {
+                console.error('There was an error fetching the initial classes!', error);
+                setClasses(fallbackClasses);
+            });
+    }, []);
 
-    const [classes, setClasses] = useState(initialClasses);
-
-    const [classesProf, setClassesProf]= useState(initialClassesProf)
-    const handleNoteChange = (classId, studentId, newNote) => {
-        setClasses((prevClasses) =>
-            prevClasses.map((classData) =>
-                classData.id === classId
-                    ? {
-                        ...classData,
-                        students: classData.students.map((student) =>
-                            student.id === studentId ? { ...student, note: newNote } : student
-                        ),
-                    }
-                    : classData
-            )
-        );
+    const handleNoteChange = (classId, studentId, note) => {
+        setNewNotes((prevNotes) => ({
+            ...prevNotes,
+            [studentId]: note,
+        }));
     };
 
-    const handleChangeToClass = (classe) => {
-            if(classe === "3°A"){
-            navigate('/dashboardClasses');
-            }
-            else if(classe === "3°B"){
-            navigate('/dashboardVertical');
-            }
-            
-    };
-
-    const handleNoteBlur = (classId, studentId, newNote) => {
-        // Sauvegarde de la note dans le JSON
-        console.log('Saving note:', classId, studentId, newNote);
-        // Ici vous pouvez ajouter la logique pour sauvegarder les données, par exemple une requête API
+    const handleNoteBlur = (classId, studentId, note) => {
+        console.log('Saving note:', classId, studentId, note);
     };
 
     const handleLogout = () => {
-        navigate('/');
+        fetch('http://10.3.1.224:5000/api/logout')
+            .then(() => {
+                navigate('/');
+            })
+            .catch(error => {
+                console.error('There was an error logging out!', error);
+            });
     };
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
+    };
+
+    const handleValidation = () => {
+        const updatedNotes = Object.keys(newNotes).map(studentId => ({
+            eleve_id: parseInt(studentId),
+            note: parseFloat(newNotes[studentId])
+        }));
+
+        const requestBody = {
+            prof_id: profId,
+            classe_id: classes[tabIndex].id,
+            matiere_id: 1, // ID de la matière, à ajuster selon votre logique
+            notes: updatedNotes,
+            commentaire: "" // Optionnel
+        };
+
+        fetch('http://10.3.1.224:5000/api/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Notes saved successfully:', data);
+                // Mettez à jour les notes localement après la validation
+                setClasses((prevClasses) =>
+                    prevClasses.map((classData) => ({
+                        ...classData,
+                        students: classData.students.map((student) => ({
+                            ...student,
+                            notes: [...student.notes, newNotes[student.id] || 'abs'],
+                        })),
+                    }))
+                );
+                setNewNotes({}); // Reset new notes after validation
+            })
+            .catch(error => {
+                console.error('There was an error saving the notes!', error);
+            });
+    };
+
+    const handleOpenDialog = (student) => {
+        setSelectedStudent(student);
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedStudent(null);
+    };
+
+    const handleBulletinValidation = () => {
+        const requestBody = {
+            prof_id: profId,
+            classe_id: classes[tabIndex].id
+        };
+
+        fetch('http://10.3.1.224:5000/api/bulletin/valider', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Bulletin validated successfully:', data);
+                handleCloseDialog();
+            })
+            .catch(error => {
+                console.error('There was an error validating the bulletin!', error);
+            });
     };
 
     return (
@@ -86,30 +202,93 @@ function DashboardProfs() {
                         <Tab key={index} label={classData.name} />
                     ))}
                 </Tabs>
-                    <TabPanel>
+                {classes.map((classData, index) => (
+                    <TabPanel key={index} value={tabIndex} index={index}>
                         <TableContainer component={Paper}>
                             <Table>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Classes</TableCell>
+                                        <TableCell>Nom</TableCell>
+                                        {classData.students[0].notes.map((_, i) => (
+                                            <TableCell key={i}>Note {i + 1}</TableCell>
+                                        ))}
+                                        <TableCell>Nouvelle Note</TableCell>
+                                        <TableCell>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {classesProf.classes.map((classe) => (
-                                        <TableRow key={classe}>
-                                            <TableCell><Button variant="contained" color="secondary" value={classe} onClick={() => handleChangeToClass(classe)}>{classe}</Button></TableCell>
+                                    {classData.students.map((student) => (
+                                        <TableRow key={student.id}>
+                                            <TableCell>{student.name}</TableCell>
+                                            {student.notes.map((note, i) => (
+                                                <TableCell key={i}>{note}</TableCell>
+                                            ))}
+                                            <TableCell>
+                                                <TextField
+                                                    onChange={(e) => handleNoteChange(classData.id, student.id, e.target.value)}
+                                                    onBlur={(e) => handleNoteBlur(classData.id, student.id, e.target.value)}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="contained" onClick={() => handleOpenDialog(student)}>
+                                                    Bulletin
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </TableContainer>
                     </TabPanel>
+                ))}
                 <Box display="flex" justifyContent="center" mt={2}>
                     <Button variant="contained" color="secondary" onClick={handleLogout}>
                         Déconnexion
                     </Button>
+                    <Button variant="contained" color="primary" onClick={handleValidation}>
+                        Valider notes
+                    </Button>
                 </Box>
             </Box>
+
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>Bulletin de {selectedStudent?.name}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Voici les notes de l'élève.
+                    </DialogContentText>
+                    {selectedStudent && (
+                        <TableContainer component={Paper}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Matière</TableCell>
+                                        <TableCell>Note</TableCell>
+                                        <TableCell>Appréciation</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {selectedStudent.notes.map((note, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>Matière {index + 1}</TableCell>
+                                            <TableCell>{note}</TableCell>
+                                            <TableCell>{note >= 13 ? 'Bravo!' : 'Peut mieux faire'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} color="primary">
+                        Fermer
+                    </Button>
+                    <Button onClick={handleBulletinValidation} color="primary">
+                        Valider le bulletin
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }
