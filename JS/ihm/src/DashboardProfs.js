@@ -15,17 +15,51 @@ import {
     Button,
     Tabs,
     Tab,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle
 } from '@mui/material';
 
 function DashboardProfs() {
     const navigate = useNavigate();
     const [tabIndex, setTabIndex] = useState(0);
-    const [newNotes, setNewNotes] = useState({}); // Store new notes temporarily
+    const [newNotes, setNewNotes] = useState({});
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
 
     const initialClasses = [
-        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', notes: [85, 66, 35] }, { id: 2, name: 'Jane Doe', notes: [90, 66, 35] }, { id: 3, name: 'Sam Smith', notes: [78, 66, 35] }] },
-        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', notes: [88, 66, 35] }, { id: 5, name: 'Bob Brown', notes: [82, 66, 35] }, { id: 6, name: 'Charlie Black', notes: [91, 66, 35] }] },
-        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', notes: [79, 66, 35] }, { id: 8, name: 'Eve Green', notes: [85, 66, 35] }, { id: 9, name: 'Frank Blue', notes: [89, 66, 35] }] }
+        {
+            id: 1, name: 'Classe A', students: [
+                { id: 1, name: 'John Doe', notes: [12, 18, 14] },
+                { id: 2, name: 'Jane Doe', notes: [19, 16, 15] },
+                { id: 3, name: 'Sam Smith', notes: [17, 13, 15] },
+                { id: 10, name: 'Chris Evans', notes: [15, 14, 19] },
+                { id: 11, name: 'Mark Ruffalo', notes: [14, 18, 17] },
+                { id: 12, name: 'Scarlett Johansson', notes: [13, 12, 15] }
+            ]
+        },
+        {
+            id: 2, name: 'Classe B', students: [
+                { id: 4, name: 'Alice Jones', notes: [16, 11, 13] },
+                { id: 5, name: 'Bob Brown', notes: [18, 16, 14] },
+                { id: 6, name: 'Charlie Black', notes: [19, 17, 15] },
+                { id: 13, name: 'Paul Rudd', notes: [16, 14, 13] },
+                { id: 14, name: 'Jeremy Renner', notes: [17, 13, 18] },
+                { id: 15, name: 'Chris Hemsworth', notes: [18, 16, 19] }
+            ]
+        },
+        {
+            id: 3, name: 'Classe C', students: [
+                { id: 7, name: 'David White', notes: [20, 15, 15] },
+                { id: 8, name: 'Eve Green', notes: [18, 17, 16] },
+                { id: 9, name: 'Frank Blue', notes: [19, 16, 14] },
+                { id: 16, name: 'Tom Holland', notes: [17, 14, 19] },
+                { id: 17, name: 'Benedict Cumberbatch', notes: [18, 15, 13] },
+                { id: 18, name: 'Brie Larson', notes: [19, 16, 18] }
+            ]
+        }
     ];
 
     const [classes, setClasses] = useState(initialClasses);
@@ -38,7 +72,6 @@ function DashboardProfs() {
     };
 
     const handleNoteBlur = (classId, studentId, note) => {
-        // Sauvegarde de la note dans le JSON
         console.log('Saving note:', classId, studentId, note);
     };
 
@@ -51,7 +84,6 @@ function DashboardProfs() {
     };
 
     const handleValidation = () => {
-        console.log('New notes:', newNotes);
         setClasses((prevClasses) =>
             prevClasses.map((classData) => ({
                 ...classData,
@@ -62,6 +94,16 @@ function DashboardProfs() {
             }))
         );
         setNewNotes({}); // Reset new notes after validation
+    };
+
+    const handleOpenDialog = (student) => {
+        setSelectedStudent(student);
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedStudent(null);
     };
 
     return (
@@ -86,6 +128,7 @@ function DashboardProfs() {
                                             <TableCell key={i}>Note {i + 1}</TableCell>
                                         ))}
                                         <TableCell>Nouvelle Note</TableCell>
+                                        <TableCell>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -101,6 +144,11 @@ function DashboardProfs() {
                                                     onBlur={(e) => handleNoteBlur(classData.id, student.id, e.target.value)}
                                                 />
                                             </TableCell>
+                                            <TableCell>
+                                                <Button variant="contained" onClick={() => handleOpenDialog(student)}>
+                                                    Bulletin
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -112,11 +160,50 @@ function DashboardProfs() {
                     <Button variant="contained" color="secondary" onClick={handleLogout}>
                         Déconnexion
                     </Button>
-                    <Button variant="contained" color="primary" onClick={handleValidation}>
+                    <Button variant="contained" color="secondary" onClick={handleValidation}>
                         Valider notes
                     </Button>
                 </Box>
             </Box>
+
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>Bulletin de {selectedStudent?.name}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Voici les notes de l'élève.
+                    </DialogContentText>
+                    {selectedStudent && (
+                        <TableContainer component={Paper}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Matière</TableCell>
+                                        <TableCell>Note</TableCell>
+                                        <TableCell>Appréciation</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {selectedStudent.notes.map((note, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>Matière {index + 1}</TableCell>
+                                            <TableCell>{note}</TableCell>
+                                            <TableCell>{note >= 13 ? 'Bravo!' : 'Peut mieux faire'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} color="primary">
+                        Fermer
+                    </Button>
+                    <Button onClick={handleCloseDialog} color="primary">
+                        Valider le bulletin
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }
