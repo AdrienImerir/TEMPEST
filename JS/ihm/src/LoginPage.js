@@ -31,6 +31,8 @@ function LoginPage() {
                 navigate('/dashboardEleves');
             } else if (role === 'Admin') {
                 navigate('/dashboardAdmin');
+            } else if (role === 'Proviseur') {
+                navigate('/dashboardProviseur');
             }
         } else {
             setError('Login ou mot de passe incorrect');
