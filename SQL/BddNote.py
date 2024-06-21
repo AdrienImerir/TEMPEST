@@ -6,7 +6,7 @@ cursor = conn.cursor()
 
 # Création de la table Eleve
 cursor.execute('''
-CREATE TABLE Eleve (
+CREATE TABLE IF NOT EXISTS Eleve (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL,
   Prenom TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE Eleve (
 
 # Création de la table NoteEleve
 cursor.execute('''
-CREATE TABLE NoteEleve (
+CREATE TABLE IF NOT EXISTS NoteEleve (
   ID INTEGER PRIMARY KEY,
   EleveID INTEGER NOT NULL,
   Notes FLOAT NOT NULL,
@@ -35,21 +35,23 @@ CREATE TABLE NoteEleve (
 
 # Création de la table Professeur
 cursor.execute('''
-CREATE TABLE Professeur (
+CREATE TABLE IF NOT EXISTS Professeur (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL,
   Prenom TEXT NOT NULL,
   ClasseID INTEGER NOT NULL,
   CheckPP BOOLEAN NOT NULL,
   UserID INTEGER NOT NULL,
+  MatiereID INTEGER NOT NULL,
   FOREIGN KEY (ClasseID) REFERENCES Classe(ID),
-  FOREIGN KEY (UserID) REFERENCES User(ID)
+  FOREIGN KEY (UserID) REFERENCES User(ID),
+  FOREIGN KEY (MatiereID) REFERENCES Matiere(ID)
 )
 ''')
 
 # Création de la table Matiere
 cursor.execute('''
-CREATE TABLE Matiere (
+CREATE TABLE IF NOT EXISTS Matiere (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL
 )
@@ -57,7 +59,7 @@ CREATE TABLE Matiere (
 
 # Création de la table Bulletin
 cursor.execute('''
-CREATE TABLE Bulletin (
+CREATE TABLE IF NOT EXISTS Bulletin (
   ID INTEGER PRIMARY KEY,
   EleveID INTEGER NOT NULL,
   CheckPP BOOLEAN,
@@ -68,7 +70,7 @@ CREATE TABLE Bulletin (
 
 # Création de la table Commentaire
 cursor.execute('''
-CREATE TABLE Commentaire (
+CREATE TABLE IF NOT EXISTS Commentaire (
   ID INTEGER PRIMARY KEY,
   EleveID INTEGER NOT NULL,
   ProfID INTEGER NOT NULL,
@@ -83,7 +85,7 @@ CREATE TABLE Commentaire (
 
 # Création de la table Classe
 cursor.execute('''
-CREATE TABLE Classe (
+CREATE TABLE IF NOT EXISTS Classe (
   ID INTEGER PRIMARY KEY,
   Nom TEXT NOT NULL
 )
