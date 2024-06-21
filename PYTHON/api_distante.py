@@ -64,41 +64,30 @@ def query_db(query, db_sel, args=(), one=False):
 # Gestion des Notes
 #################################################################################################################################################
 
-
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
-
-    logging.debug(f"Session: {session}")
-    # if 'username' not in session:
-    #    logging.debug("User not authenticated")
-    #    return jsonify({'erreur': 'Non authentifie'}), 401
-
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    username = session.get('username')
-    role = session.get('role')  # Assuming you store the role in the session
+    
+    logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
 
-    logging.debug(f"Session Username: {username}")
-    logging.debug(f"Session Role: {role}")
-
-    logging.debug(f"Reçu les paramètres - Prénom: {prenom}, Nom: {nom}")
-
+    # Rechercher l'élève par prénom et nom
     eleve = query_db('''
-        SELECT e.ID, e.Prenom, e.Nom, c.Nom as Classe
+        SELECT e.ID, e.Prenom, e.Nom, c.ID as ClasseID, c.Nom as Classe
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
         WHERE LOWER(e.Prenom) = ? AND LOWER(e.Nom) = ?
     ''', "note", [prenom, nom], one=True)
 
     if not eleve:
-        logging.debug("Élève non trouvé")
-        return jsonify({'erreur': 'Élève non trouvé'}), 404
+        logging.debug("Eleve non trouvé")
+        return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(f"Élève trouvé - ID: {eleve['ID']}, Prénom: {
-    eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
+    # Récupérer les notes de l'élève
     notes = query_db('''
-        SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
+        SELECT n.Notes, m.ID as MatiereID, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
         FROM NoteEleve n
         JOIN Matiere m ON n.MatiereID = m.ID
         JOIN Professeur p ON n.ProfID = p.ID
@@ -107,8 +96,34 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {
-    note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = []
+
+    for note in notes:
+        matiere_id = note['MatiereID']
+
+        # Récupérer la note minimale et maximale pour la matière dans l'ensemble de la classe
+        stats = query_db('''
+            SELECT MIN(n.Notes) as MinNote, MAX(n.Notes) as MaxNote
+            FROM NoteEleve n
+            JOIN Eleve e ON n.EleveID = e.ID
+            WHERE e.ClasseID = ? AND n.MatiereID = ?
+        ''', "note", [eleve['ClasseID'], matiere_id], one=True)
+
+        # Récupérer le commentaire pour cette matière et cet élève
+        commentaire = query_db('''
+            SELECT c.Commentaire
+            FROM Commentaire c
+            WHERE c.EleveID = ? AND c.MatiereID = ? AND c.ProfID = ?
+        ''', "note", [eleve['ID'], matiere_id, note['ProfesseurNom']], one=True)
+
+        notes_data.append({
+            'matiere': note['Matiere'],
+            'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
+            'note': note['Notes'],
+            'note_min': stats['MinNote'],
+            'note_max': stats['MaxNote'],
+            'commentaire': commentaire['Commentaire'] if commentaire else None
+        })
 
     return jsonify({
         'eleve': {
@@ -118,6 +133,8 @@ def get_eleve_notes():
         },
         'notes': notes_data
     })
+
+
 
 
 @app.route('/api/notes', methods=['POST'])
@@ -216,7 +233,7 @@ def get_professeur_notes():
     logging.debug(f"Reçu les paramètres - Prénom: {prenom}, Nom: {nom}")
 
     prof = query_db('''
-        SELECT ID FROM Professeur WHERE Prenom = ? AND Nom = ?
+        SELECT ID FROM Professeur WHERE LOWER(Prenom) = ? AND LOWER(Nom) = ?
     ''', "note", [prenom, nom], one=True)
 
     if not prof:
