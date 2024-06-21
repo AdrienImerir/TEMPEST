@@ -1,6 +1,6 @@
 import hashlib
-from flask import Flask, request, jsonify, session
-from flask_cors import CORS 
+from flask import Flask, request, jsonify, session, redirect
+from flask_cors import CORS
 import sqlite3
 import logging
 
@@ -12,15 +12,13 @@ app.config.update(
     SECRET_KEY="a2899c367daefa60fbe33ce8526ef6ea68987221437e4369edaac59993a5f616",
     SESSION_COOKIE_HTTPONLY=True,
     REMEMBER_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SAMESITE="None",
 )
 
 # DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddNote.db'
-# DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddLogin.db'
-#DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
-#DATABASE = 'C:\\Users\\Thomas\\Documents\\BddLogin.db'
-DATABASE_NOTE = '../SQL/BddNote.db'
-DATABASE_USERS = '../SQL/BddLogin.db'
+DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+DATABASE_NOTE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+DATABASE_USERS = 'C:\\Users\\Thomas\\Documents\\BddLogin.db'
 
 # Configurez le logging
 logging.basicConfig(level=logging.DEBUG)
@@ -69,12 +67,12 @@ def query_db(query, db_sel, args=(), one=False):
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
     # Securely check if the user is authenticated
-    # if 'username' not in session or session['username'] is None:
-    #     return jsonify({'status': '0', 'message': 'Utilisateur non connecté'}), 401
+    if 'username' not in session:
+        return jsonify({'erreur': 'Non authentifie'}), 401
 
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    
+
     logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
@@ -82,13 +80,14 @@ def get_eleve_notes():
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
         WHERE e.Prenom = ? AND e.Nom = ?
-    ''', [prenom, nom], one=True)
+    ''', "notes", [prenom, nom], one=True)
 
     if not eleve:
-        logging.debug("Eleve non trouvé")
+        logging.debug("Eleve non trouve")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {
+    eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -98,9 +97,10 @@ def get_eleve_notes():
         WHERE n.EleveID = ?
     ''', [eleve['ID']])
 
-    logging.debug(f"Notes récupérées: {notes}")
+    logging.debug(f"Notes recuperees: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {
+    note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
@@ -127,7 +127,8 @@ def ajouter_notes():
     ''', [classe_id])
 
     if bulletin_valide:
-        logging.debug("Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
+        logging.debug(
+            "Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
         return jsonify({'erreur': 'Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.'}), 403
 
     conn = get_notes_db()
@@ -152,6 +153,7 @@ def ajouter_notes():
 
     logging.debug("Notes et commentaires ajoutes avec succes.")
     return jsonify({'message': 'Notes et commentaires ajoutes avec succes.'}), 201
+
 
 @app.route('/api/bulletin/valider', methods=['POST'])
 def valider_bulletin():
@@ -187,13 +189,14 @@ def valider_bulletin():
     cur.close()
     conn.close()
 
-
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
 #################################################################################################################################################
 # Gestion des logins et registers
 #################################################################################################################################################
+
+
 @app.route('/api/auth', methods=['POST'])
 def auth_session():
     # Get the username and password from the request
@@ -211,7 +214,7 @@ def auth_session():
     # If the user is found, set the session username
     if user:
         session['username'] = username
-        return jsonify({'status': '1', 'message': 'Authentification reussie'}), 200
+        return jsonify({'status': '1', 'message': 'Authentification reussie', 'role': user['Role']}), 200
     else:
         return jsonify({'status': '0', 'erreur': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
@@ -219,6 +222,8 @@ def auth_session():
 @app.route('/home_fake', methods=['GET'])
 def home_page():
     # Check if the user is authenticated
+    if 'username' not in session:
+        return jsonify({'erreur': 'Non authentifie'}), 401
 
     # if user is authentificated, show a message
     return jsonify({'status': '1', 'message': 'Bienvenue sur la page d\'accueil'})
