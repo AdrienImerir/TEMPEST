@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -28,8 +28,11 @@ function DashboardProfs() {
     const [newNotes, setNewNotes] = useState({});
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [classes, setClasses] = useState([]);
+    const [profId, setProfId] = useState(1); // ID du professeur, à ajuster selon votre logique d'authentification
 
-    const initialClasses = [
+    // Données fictives
+    const fallbackClasses = [
         {
             id: 1, name: 'Classe A', students: [
                 { id: 1, name: 'John Doe', notes: [12, 18, 14] },
@@ -62,7 +65,32 @@ function DashboardProfs() {
         }
     ];
 
-    const [classes, setClasses] = useState(initialClasses);
+    useEffect(() => {
+        // Remplacez par l'URL de votre API et les paramètres appropriés
+        fetch('http://10.3.1.224:5000/api/eleves/notes?prenom=John&nom=Doe')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const formattedClasses = data.map(classe => ({
+                    id: classe.ClasseID,
+                    name: classe.Nom,
+                    students: classe.Eleves.map(eleve => ({
+                        id: eleve.ID,
+                        name: `${eleve.Prenom} ${eleve.Nom}`,
+                        notes: eleve.Notes.map(note => note.Note)
+                    }))
+                }));
+                setClasses(formattedClasses);
+            })
+            .catch(error => {
+                console.error('There was an error fetching the initial classes!', error);
+                setClasses(fallbackClasses);
+            });
+    }, []);
 
     const handleNoteChange = (classId, studentId, note) => {
         setNewNotes((prevNotes) => ({
@@ -76,7 +104,13 @@ function DashboardProfs() {
     };
 
     const handleLogout = () => {
-        navigate('/');
+        fetch('http://10.3.1.224:5000/api/logout')
+            .then(() => {
+                navigate('/');
+            })
+            .catch(error => {
+                console.error('There was an error logging out!', error);
+            });
     };
 
     const handleTabChange = (event, newValue) => {
@@ -84,16 +118,44 @@ function DashboardProfs() {
     };
 
     const handleValidation = () => {
-        setClasses((prevClasses) =>
-            prevClasses.map((classData) => ({
-                ...classData,
-                students: classData.students.map((student) => ({
-                    ...student,
-                    notes: [...student.notes, newNotes[student.id] || 'abs'],
-                })),
-            }))
-        );
-        setNewNotes({}); // Reset new notes after validation
+        const updatedNotes = Object.keys(newNotes).map(studentId => ({
+            eleve_id: parseInt(studentId),
+            note: parseFloat(newNotes[studentId])
+        }));
+
+        const requestBody = {
+            prof_id: profId,
+            classe_id: classes[tabIndex].id,
+            matiere_id: 1, // ID de la matière, à ajuster selon votre logique
+            notes: updatedNotes,
+            commentaire: "" // Optionnel
+        };
+
+        fetch('http://10.3.1.224:5000/api/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Notes saved successfully:', data);
+                // Mettez à jour les notes localement après la validation
+                setClasses((prevClasses) =>
+                    prevClasses.map((classData) => ({
+                        ...classData,
+                        students: classData.students.map((student) => ({
+                            ...student,
+                            notes: [...student.notes, newNotes[student.id] || 'abs'],
+                        })),
+                    }))
+                );
+                setNewNotes({}); // Reset new notes after validation
+            })
+            .catch(error => {
+                console.error('There was an error saving the notes!', error);
+            });
     };
 
     const handleOpenDialog = (student) => {
@@ -104,6 +166,29 @@ function DashboardProfs() {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedStudent(null);
+    };
+
+    const handleBulletinValidation = () => {
+        const requestBody = {
+            prof_id: profId,
+            classe_id: classes[tabIndex].id
+        };
+
+        fetch('http://10.3.1.224:5000/api/bulletin/valider', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Bulletin validated successfully:', data);
+                handleCloseDialog();
+            })
+            .catch(error => {
+                console.error('There was an error validating the bulletin!', error);
+            });
     };
 
     return (
@@ -160,7 +245,7 @@ function DashboardProfs() {
                     <Button variant="contained" color="secondary" onClick={handleLogout}>
                         Déconnexion
                     </Button>
-                    <Button variant="contained" color="secondary" onClick={handleValidation}>
+                    <Button variant="contained" color="primary" onClick={handleValidation}>
                         Valider notes
                     </Button>
                 </Box>
@@ -199,7 +284,7 @@ function DashboardProfs() {
                     <Button onClick={handleCloseDialog} color="primary">
                         Fermer
                     </Button>
-                    <Button onClick={handleCloseDialog} color="primary">
+                    <Button onClick={handleBulletinValidation} color="primary">
                         Valider le bulletin
                     </Button>
                 </DialogActions>
