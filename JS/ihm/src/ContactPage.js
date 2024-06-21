@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function ContactPage() {
+    const navigate = useNavigate();
     const [userName, setUserName] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -48,8 +50,11 @@ function ContactPage() {
                                 margin="normal"
                             />
                             <Box display="flex" justifyContent="center" mt={2}>
-                                <Button variant="contained" color="primary" type="submit">
+                                <Button variant="contained" color="secondary" type="submit">
                                     Envoyer
+                                </Button>
+                                <Button variant="contained" color="secondary" type="submit" onClick={()=>{navigate('/');}}>
+                                    Retour
                                 </Button>
                             </Box>
                         </Box>
