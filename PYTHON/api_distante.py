@@ -87,7 +87,7 @@ def get_eleve_notes():
         SELECT e.ID, e.Prenom, e.Nom, c.Nom as Classe
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
-        WHERE e.Prenom = ? AND e.Nom = ?
+        WHERE LOWER(e.Prenom) = ? AND LOWER(e.Nom) = ?
     ''', "note", [prenom, nom], one=True)
 
     if not eleve:
@@ -200,6 +200,7 @@ def valider_bulletin():
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
 
+
 @app.route('/api/professeur/notes', methods=['GET'])
 def get_professeur_notes():
     username = request.args.get('username')
@@ -239,7 +240,8 @@ def get_professeur_notes():
 
     logging.debug(f"Notes trouvées pour le ProfID {prof_id}: {notes}")
 
-    notes_data = [{'eleve_prenom': note['ElevePrenom'], 'eleve_nom': note['EleveNom'], 'matiere': note['Matiere'], 'classe': note['Classe'], 'note': note['Notes']} for note in notes]
+    notes_data = [{'eleve_prenom': note['ElevePrenom'], 'eleve_nom': note['EleveNom'],
+                   'matiere': note['Matiere'], 'classe': note['Classe'], 'note': note['Notes']} for note in notes]
 
     return jsonify({'notes': notes_data})
 #################################################################################################################################################
