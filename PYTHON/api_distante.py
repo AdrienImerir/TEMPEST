@@ -1,5 +1,5 @@
 import hashlib
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, redirect
 from flask_cors import CORS
 from flask_swagger import swagger
 import sqlite3
@@ -73,6 +73,7 @@ def get_user_role(user_id):
 # Gestion des Notes
 #################################################################################################################################################
 
+
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
     # Securely check if the user is authenticated
@@ -81,7 +82,7 @@ def get_eleve_notes():
 
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-
+    
     logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
@@ -95,8 +96,8 @@ def get_eleve_notes():
         logging.debug("Eleve non trouvé")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(
-        f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {
+    eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -108,8 +109,8 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
-                   'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {
+    note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
@@ -162,7 +163,6 @@ def ajouter_notes():
     logging.debug("Notes et commentaires ajoutes avec succes.")
     return jsonify({'message': 'Notes et commentaires ajoutes avec succes.'}), 201
 
-
 @app.route('/api/bulletin/valider', methods=['POST'])
 def valider_bulletin():
     data = request.json
@@ -197,8 +197,32 @@ def valider_bulletin():
     cur.close()
     conn.close()
 
+
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
+
+@app.route('/api/professeur/classes', methods=['GET'])
+def get_classes_professeur():
+    prof_id = request.args.get('prof_id')
+
+    logging.debug(f"Reçu le paramètre - ProfID: {prof_id}")
+
+    classes = query_db('''
+        SELECT c.ID, c.Nom
+        FROM Classe c
+        JOIN Professeur p ON c.ID = p.ClasseID
+        WHERE p.ID = ?
+    ''', [prof_id])
+
+    if not classes:
+        logging.debug("Aucune classe trouvée pour ce professeur")
+        return jsonify({'erreur': 'Aucune classe trouvée pour ce professeur'}), 404
+
+    logging.debug(f"Classes trouvées pour le ProfID {prof_id}: {classes}")
+
+    classes_data = [{'id': classe['ID'], 'nom': classe['Nom']} for classe in classes]
+
+    return jsonify({'classes': classes_data})
 
 
 #################################################################################################################################################
@@ -293,6 +317,8 @@ def update_user():
 @app.route('/home_fake_test', methods=['GET'])
 def home_page():
     # Check if the user is authenticated
+    if 'username' not in session:
+        return jsonify({'erreur': 'Non authentifie'}), 401
 
     # if user is authentificated, show a message
     return jsonify({'status': '1', 'message': 'Bienvenue sur la page d\'accueil'})
