@@ -14,13 +14,16 @@ function LoginPage() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username: login, password: mdp })
+            body: JSON.stringify({ username: login, password: mdp }),
+            credentials: 'include' // Inclure les cookies de session
         });
- 
+
         const data = await response.json();
 
         if (response.status === 200 && data.status === '1') {
-            const role = data.role;
+            const { role, prenom, nom } = data;
+            localStorage.setItem('user', JSON.stringify({ login, role, prenom, nom }));
+
             if (role === 'Prof') {
                 navigate('/dashboardProfs');
             } else if (role === 'Eleve') {
