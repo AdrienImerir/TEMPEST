@@ -48,7 +48,24 @@ function DashboardEleves() {
                 if (data.erreur) {
                     throw new Error(data.erreur);
                 }
-                setData(data.notes);
+
+                // Combine les données pour chaque matière
+                const combinedData = data.notes.map(note => {
+                    const maxNote = data.notes_max.find(max => max.matiere === note.matiere);
+                    const minNote = data.notes_min.find(min => min.matiere === note.matiere);
+                    const commentaire = data.commentaires.find(comm => comm.matiere === note.matiere);
+
+                    return {
+                        matiere: note.matiere,
+                        note: note.note,
+                        professeur: note.professeur,
+                        maxNote: maxNote ? maxNote.note_max : null,
+                        minNote: minNote ? minNote.note_min : null,
+                        appreciation: commentaire ? commentaire.commentaire : 'N/A',
+                    };
+                });
+
+                setData(combinedData);
                 setIsLoading(false);
             })
             .catch(error => {
