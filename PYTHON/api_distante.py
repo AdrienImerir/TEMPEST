@@ -1,6 +1,7 @@
 import hashlib
 from flask import Flask, request, jsonify, session
-from flask_cors import CORS 
+from flask_cors import CORS
+from flask_swagger import swagger
 import sqlite3
 import logging
 
@@ -58,10 +59,19 @@ def query_db(query, db_sel, args=(), one=False):
     logging.debug(f"Returned rows: {rv}")
     return (rv[0] if rv else None) if one else rv
 
+
+def get_user_role(user_id):
+    user = query_db('''SELECT Role FROM User WHERE ID = ? ''', "users", [user_id], one=True)
+
+    if user:
+        return user['Role']
+    else:
+        return None
+
+
 #################################################################################################################################################
 # Gestion des Notes
 #################################################################################################################################################
-
 
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
@@ -71,7 +81,7 @@ def get_eleve_notes():
 
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    
+
     logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
@@ -85,7 +95,8 @@ def get_eleve_notes():
         logging.debug("Eleve non trouvé")
         return jsonify({'erreur': 'Eleve non trouve'}), 404
 
-    logging.debug(f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(
+        f"Elève trouvé - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -97,7 +108,8 @@ def get_eleve_notes():
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}",
+                   'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
@@ -150,6 +162,7 @@ def ajouter_notes():
     logging.debug("Notes et commentaires ajoutes avec succes.")
     return jsonify({'message': 'Notes et commentaires ajoutes avec succes.'}), 201
 
+
 @app.route('/api/bulletin/valider', methods=['POST'])
 def valider_bulletin():
     data = request.json
@@ -184,9 +197,9 @@ def valider_bulletin():
     cur.close()
     conn.close()
 
-
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
+
 
 #################################################################################################################################################
 # Gestion des logins et registers
@@ -207,13 +220,77 @@ def auth_session():
 
     # If the user is found, set the session username
     if user:
-        session['username'] = username
-        return jsonify({'status': '1', 'message': 'Authentification reussie'}), 200
+        session['username'] = user['ID']
+        return jsonify({'role': user['Role'], 'status': '1', 'message': 'Authentification reussie'}), 200
     else:
         return jsonify({'status': '0', 'erreur': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
 
-@app.route('/home_fake', methods=['GET'])
+# get all users from the database
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    # Check if the user is authenticated
+    if 'username' not in session or session['username'] is None:
+        return jsonify({'status': '0', 'message': 'Utilisateur non connecte'}), 401
+
+    # Check if the user is an admin
+    if get_user_role(session['username']) in ['Prof', 'Admin']:
+        return jsonify({'status': '0', 'message': 'Utilisateur non autorise'}), 401
+
+    users = query_db('''
+        SELECT * FROM User WHERE Role != 'Admin'
+    ''', "users")
+
+    users_data = [{'id': user['ID'], 'username': user['Username'], 'role': user['Role']} for user in users]
+
+    return jsonify(users_data)
+
+
+@app.route('/api/updateuser', methods=['POST'])
+def update_user():
+    user_id = request.json.get('userid')
+    new_username = request.json.get('new_username')
+    password = request.json.get('password')
+    role = request.json.get('role')
+
+    # Hash the password
+    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+    # Check if the user exists
+    user = query_db('''
+        SELECT * FROM User WHERE ID = ?''', "users", [user_id], one=True)
+
+    if not user:
+        return jsonify({'status': '-1', 'erreur': 'Manipulation de données détecté'}), 401
+
+    # if the username is different from the current one, update it by the user_id
+    if new_username != user['Username']:
+        query_db('''
+            UPDATE User
+            SET Username = ?
+            WHERE ID = ?
+        ''', "users", [new_username, user_id])
+
+    # if the role is different from the current one, update it by the user_id
+    if role != user['Role']:
+        query_db('''
+            UPDATE User
+            SET Role = ?
+            WHERE ID = ?
+        ''', "users", [role, user_id])
+
+    # if the password is different from the current one, update it by the user_id
+    if password != user['Password']:
+        query_db('''
+            UPDATE User
+            SET Password = ?
+            WHERE ID = ?
+        ''', "users", [password, user_id])
+
+    return jsonify({'status': '1', 'message': 'Mot de passe modifie'}), 200
+
+
+@app.route('/home_fake_test', methods=['GET'])
 def home_page():
     # Check if the user is authenticated
 
@@ -224,7 +301,7 @@ def home_page():
 @app.route('/api/isloggedin', methods=['GET'])
 def is_user_loggedin():
     if 'username' in session:
-        return jsonify({'status': '1', 'message': 'Utilisateur connecte'})
+        return jsonify({'status': '1', 'message': 'Utilisateur connecte', 'role': get_user_role(session['username'])})
     else:
         return jsonify({'status': '0', 'message': 'Utilisateur non connecte'})
 
