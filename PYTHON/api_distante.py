@@ -1,24 +1,25 @@
 import hashlib
 from flask import Flask, request, jsonify, session, redirect
 from flask_cors import CORS
-from flask_swagger import swagger
 import sqlite3
 import logging
 
 app = Flask(__name__)
-CORS(app)  # Cette ligne permet d'ajouter les politiques CORS
+# Cette ligne permet d'ajouter les politiques CORS
+CORS(app, supports_credentials=True)
 
 app.config.update(
     DEBUG=True,
     SECRET_KEY="a2899c367daefa60fbe33ce8526ef6ea68987221437e4369edaac59993a5f616",
     SESSION_COOKIE_HTTPONLY=True,
     REMEMBER_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SAMESITE="None",
 )
 
 # DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddNote.db'
-DATABASE_NOTE = '../SQL/BddNote.db'
-DATABASE_USERS = '../SQL/BddLogin.db'
+DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+DATABASE_NOTE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+DATABASE_USERS = 'C:\\Users\\Thomas\\Documents\\BddLogin.db'
 
 # Configurez le logging
 logging.basicConfig(level=logging.DEBUG)
@@ -59,16 +60,6 @@ def query_db(query, db_sel, args=(), one=False):
     logging.debug(f"Returned rows: {rv}")
     return (rv[0] if rv else None) if one else rv
 
-
-def get_user_role(user_id):
-    user = query_db('''SELECT Role FROM User WHERE ID = ? ''', "users", [user_id], one=True)
-
-    if user:
-        return user['Role']
-    else:
-        return None
-
-
 #################################################################################################################################################
 # Gestion des Notes
 #################################################################################################################################################
@@ -76,27 +67,35 @@ def get_user_role(user_id):
 
 @app.route('/api/eleves/notes', methods=['GET'])
 def get_eleve_notes():
-    # Securely check if the user is authenticated
-    # if 'username' not in session or session['username'] is None:
-    #     return jsonify({'status': '0', 'message': 'Utilisateur non connecté'}), 401
+
+    logging.debug(f"Session: {session}")
+    # if 'username' not in session:
+    #    logging.debug("User not authenticated")
+    #    return jsonify({'erreur': 'Non authentifie'}), 401
 
     prenom = request.args.get('prenom')
     nom = request.args.get('nom')
-    
-    logging.debug(f"Reçu les parametres - Prenom: {prenom}, Nom: {nom}")
+    username = session.get('username')
+    role = session.get('role')  # Assuming you store the role in the session
+
+    logging.debug(f"Session Username: {username}")
+    logging.debug(f"Session Role: {role}")
+
+    logging.debug(f"Reçu les paramètres - Prénom: {prenom}, Nom: {nom}")
 
     eleve = query_db('''
         SELECT e.ID, e.Prenom, e.Nom, c.Nom as Classe
         FROM Eleve e
         JOIN Classe c ON e.ClasseID = c.ID
         WHERE e.Prenom = ? AND e.Nom = ?
-    ''', [prenom, nom], one=True)
+    ''', "note", [prenom, nom], one=True)
 
     if not eleve:
-        logging.debug("Eleve non trouvé")
-        return jsonify({'erreur': 'Eleve non trouve'}), 404
+        logging.debug("Élève non trouvé")
+        return jsonify({'erreur': 'Élève non trouvé'}), 404
 
-    logging.debug(f"Eleve trouve - ID: {eleve['ID']}, Prenom: {eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
+    logging.debug(f"Élève trouvé - ID: {eleve['ID']}, Prénom: {
+    eleve['Prenom']}, Nom: {eleve['Nom']}, Classe: {eleve['Classe']}")
 
     notes = query_db('''
         SELECT n.Notes, m.Nom as Matiere, p.Nom as ProfesseurNom, p.Prenom as ProfesseurPrenom
@@ -104,11 +103,12 @@ def get_eleve_notes():
         JOIN Matiere m ON n.MatiereID = m.ID
         JOIN Professeur p ON n.ProfID = p.ID
         WHERE n.EleveID = ?
-    ''', [eleve['ID']])
+    ''', "note", [eleve['ID']])
 
     logging.debug(f"Notes récupérées: {notes}")
 
-    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
+    notes_data = [{'matiere': note['Matiere'], 'professeur': f"{note['ProfesseurPrenom']} {
+    note['ProfesseurNom']}", 'note': note['Notes']} for note in notes]
 
     return jsonify({
         'eleve': {
@@ -135,7 +135,8 @@ def ajouter_notes():
     ''', [classe_id])
 
     if bulletin_valide:
-        logging.debug("Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
+        logging.debug(
+            "Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
         return jsonify({'erreur': 'Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.'}), 403
 
     conn = get_notes_db()
@@ -160,6 +161,7 @@ def ajouter_notes():
 
     logging.debug("Notes et commentaires ajoutes avec succes.")
     return jsonify({'message': 'Notes et commentaires ajoutes avec succes.'}), 201
+
 
 @app.route('/api/bulletin/valider', methods=['POST'])
 def valider_bulletin():
@@ -195,137 +197,66 @@ def valider_bulletin():
     cur.close()
     conn.close()
 
-
     logging.debug("Bulletin valide avec succes.")
     return jsonify({'message': 'Bulletin valide avec succes.'}), 200
-
-@app.route('/api/professeur/classes', methods=['GET'])
-def get_classes_professeur():
-    prof_id = request.args.get('prof_id')
-
-    logging.debug(f"Reçu le paramètre - ProfID: {prof_id}")
-
-    classes = query_db('''
-        SELECT c.ID, c.Nom
-        FROM Classe c
-        JOIN Professeur p ON c.ID = p.ClasseID
-        WHERE p.ID = ?
-    ''', [prof_id])
-
-    if not classes:
-        logging.debug("Aucune classe trouvée pour ce professeur")
-        return jsonify({'erreur': 'Aucune classe trouvée pour ce professeur'}), 404
-
-    logging.debug(f"Classes trouvées pour le ProfID {prof_id}: {classes}")
-
-    classes_data = [{'id': classe['ID'], 'nom': classe['Nom']} for classe in classes]
-
-    return jsonify({'classes': classes_data})
-
 
 #################################################################################################################################################
 # Gestion des logins et registers
 #################################################################################################################################################
+
+
 @app.route('/api/auth', methods=['POST'])
 def auth_session():
-    # Get the username and password from the request
     username = request.json.get('username')
     password = request.json.get('password')
 
-    # Hash the password
+    # Split username into prenom and nom
+    try:
+        prenom, nom = username.split('.')
+    except ValueError:
+        return jsonify({'status': '0', 'erreur': 'Format de login incorrect. Utilisez prenom.nom'}), 400
+
     password = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
-    # Query the database for the user
     user = query_db('''
         SELECT * FROM User WHERE Username = ? AND Password = ?
     ''', "users", [username, password], one=True)
 
-    # If the user is found, set the session username
     if user:
-        session['username'] = user['ID']
-        return jsonify({'role': user['Role'], 'status': '1', 'message': 'Authentification reussie'}), 200
+        session['username'] = username
+        session['role'] = user['Role']  # Store role in session
+        session['prenom'] = prenom
+        session['nom'] = nom
+
+        logging.debug(f"User authenticated - Username: {username}, Role: {
+        user['Role']}, Prenom: {prenom}, Nom: {nom}")
+
+        return jsonify({
+            'status': '1',
+            'message': 'Authentification reussie',
+            'role': user['Role'],
+            'prenom': prenom,
+            'nom': nom
+        }), 200
     else:
+        logging.debug("Authentication failed")
         return jsonify({'status': '0', 'erreur': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
 
-# get all users from the database
-@app.route('/api/users', methods=['GET'])
-def get_users():
-    # Check if the user is authenticated
-    if 'username' not in session or session['username'] is None:
-        return jsonify({'status': '0', 'message': 'Utilisateur non connecte'}), 401
-
-    # Check if the user is an admin
-    if get_user_role(session['username']) in ['Prof', 'Admin']:
-        return jsonify({'status': '0', 'message': 'Utilisateur non autorise'}), 401
-
-    users = query_db('''
-        SELECT * FROM User WHERE Role != 'Admin'
-    ''', "users")
-
-    users_data = [{'id': user['ID'], 'username': user['Username'], 'role': user['Role']} for user in users]
-
-    return jsonify(users_data)
-
-
-@app.route('/api/updateuser', methods=['POST'])
-def update_user():
-    user_id = request.json.get('userid')
-    new_username = request.json.get('new_username')
-    password = request.json.get('password')
-    role = request.json.get('role')
-
-    # Hash the password
-    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-
-    # Check if the user exists
-    user = query_db('''
-        SELECT * FROM User WHERE ID = ?''', "users", [user_id], one=True)
-
-    if not user:
-        return jsonify({'status': '-1', 'erreur': 'Manipulation de données détecté'}), 401
-
-    # if the username is different from the current one, update it by the user_id
-    if new_username != user['Username']:
-        query_db('''
-            UPDATE User
-            SET Username = ?
-            WHERE ID = ?
-        ''', "users", [new_username, user_id])
-
-    # if the role is different from the current one, update it by the user_id
-    if role != user['Role']:
-        query_db('''
-            UPDATE User
-            SET Role = ?
-            WHERE ID = ?
-        ''', "users", [role, user_id])
-
-    # if the password is different from the current one, update it by the user_id
-    if password != user['Password']:
-        query_db('''
-            UPDATE User
-            SET Password = ?
-            WHERE ID = ?
-        ''', "users", [password, user_id])
-
-    return jsonify({'status': '1', 'message': 'Mot de passe modifie'}), 200
-
-
-@app.route('/home_fake_test', methods=['GET'])
+@app.route('/home_fake', methods=['GET'])
 def home_page():
     # Check if the user is authenticated
     if 'username' not in session:
-        return jsonify({'erreur': 'Non authentifie'}), 401
+        return "Non Authentifié", 401
 
     # if user is authentificated, show a message
-    return jsonify({'status': '1', 'message': 'Bienvenue sur la page d\'accueil'})
+    return "Authentifié"
 
 
 @app.route('/api/isloggedin', methods=['GET'])
 def is_user_loggedin():
     if 'username' in session:
-        return jsonify({'status': '1', 'message': 'Utilisateur connecte', 'role': get_user_role(session['username'])})
+        return jsonify({'status': '1', 'message': 'Utilisateur connecte'})
     else:
         return jsonify({'status': '0', 'message': 'Utilisateur non connecte'})
 
