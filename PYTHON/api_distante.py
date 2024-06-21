@@ -16,6 +16,9 @@ app.config.update(
 )
 
 # DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddNote.db'
+# DATABASE = 'C:\\Users\\emili\\Documents\\master2\\Tempest\\tempest_loc\\SQL\\BddLogin.db'
+#DATABASE = 'C:\\Users\\Thomas\\Documents\\BddNote.db'
+#DATABASE = 'C:\\Users\\Thomas\\Documents\\BddLogin.db'
 DATABASE_NOTE = '../SQL/BddNote.db'
 DATABASE_USERS = '../SQL/BddLogin.db'
 
