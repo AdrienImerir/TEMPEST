@@ -20,51 +20,26 @@ import {
 function DashboardProfs() {
     const navigate = useNavigate();
     const [tabIndex, setTabIndex] = useState(0);
+    const [newNotes, setNewNotes] = useState({}); // Store new notes temporarily
 
     const initialClasses = [
-        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', note: 85 }, { id: 2, name: 'Jane Doe', note: 90 }, { id: 3, name: 'Sam Smith', note: 78 }] },
-        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', note: 88 }, { id: 5, name: 'Bob Brown', note: 82 }, { id: 6, name: 'Charlie Black', note: 91 }] },
-        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', note: 79 }, { id: 8, name: 'Eve Green', note: 85 }, { id: 9, name: 'Frank Blue', note: 89 }] }
+        { id: 1, name: 'Classe A', students: [{ id: 1, name: 'John Doe', notes: [85, 66, 35] }, { id: 2, name: 'Jane Doe', notes: [90, 66, 35] }, { id: 3, name: 'Sam Smith', notes: [78, 66, 35] }] },
+        { id: 2, name: 'Classe B', students: [{ id: 4, name: 'Alice Jones', notes: [88, 66, 35] }, { id: 5, name: 'Bob Brown', notes: [82, 66, 35] }, { id: 6, name: 'Charlie Black', notes: [91, 66, 35] }] },
+        { id: 3, name: 'Classe C', students: [{ id: 7, name: 'David White', notes: [79, 66, 35] }, { id: 8, name: 'Eve Green', notes: [85, 66, 35] }, { id: 9, name: 'Frank Blue', notes: [89, 66, 35] }] }
     ];
-
-    const initialClassesProf = {
-        classes: [
-            "3°A","3°B","3°C","5°B"
-        ]
-    }
 
     const [classes, setClasses] = useState(initialClasses);
 
-    const [classesProf, setClassesProf]= useState(initialClassesProf)
-    const handleNoteChange = (classId, studentId, newNote) => {
-        setClasses((prevClasses) =>
-            prevClasses.map((classData) =>
-                classData.id === classId
-                    ? {
-                        ...classData,
-                        students: classData.students.map((student) =>
-                            student.id === studentId ? { ...student, note: newNote } : student
-                        ),
-                    }
-                    : classData
-            )
-        );
+    const handleNoteChange = (classId, studentId, note) => {
+        setNewNotes((prevNotes) => ({
+            ...prevNotes,
+            [studentId]: note,
+        }));
     };
 
-    const handleChangeToClass = (classe) => {
-            if(classe === "3°A"){
-            navigate('/dashboardClasses');
-            }
-            else if(classe === "3°B"){
-            navigate('/dashboardVertical');
-            }
-            
-    };
-
-    const handleNoteBlur = (classId, studentId, newNote) => {
+    const handleNoteBlur = (classId, studentId, note) => {
         // Sauvegarde de la note dans le JSON
-        console.log('Saving note:', classId, studentId, newNote);
-        // Ici vous pouvez ajouter la logique pour sauvegarder les données, par exemple une requête API
+        console.log('Saving note:', classId, studentId, note);
     };
 
     const handleLogout = () => {
@@ -73,6 +48,20 @@ function DashboardProfs() {
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);
+    };
+
+    const handleValidation = () => {
+        console.log('New notes:', newNotes);
+        setClasses((prevClasses) =>
+            prevClasses.map((classData) => ({
+                ...classData,
+                students: classData.students.map((student) => ({
+                    ...student,
+                    notes: [...student.notes, newNotes[student.id] || 'abs'],
+                })),
+            }))
+        );
+        setNewNotes({}); // Reset new notes after validation
     };
 
     return (
@@ -86,27 +75,45 @@ function DashboardProfs() {
                         <Tab key={index} label={classData.name} />
                     ))}
                 </Tabs>
-                    <TabPanel>
+                {classes.map((classData, index) => (
+                    <TabPanel key={index} value={tabIndex} index={index}>
                         <TableContainer component={Paper}>
                             <Table>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Classes</TableCell>
+                                        <TableCell>Nom</TableCell>
+                                        {classData.students[0].notes.map((_, i) => (
+                                            <TableCell key={i}>Note {i + 1}</TableCell>
+                                        ))}
+                                        <TableCell>Nouvelle Note</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {classesProf.classes.map((classe) => (
-                                        <TableRow key={classe}>
-                                            <TableCell><Button variant="contained" color="secondary" value={classe} onClick={() => handleChangeToClass(classe)}>{classe}</Button></TableCell>
+                                    {classData.students.map((student) => (
+                                        <TableRow key={student.id}>
+                                            <TableCell>{student.name}</TableCell>
+                                            {student.notes.map((note, i) => (
+                                                <TableCell key={i}>{note}</TableCell>
+                                            ))}
+                                            <TableCell>
+                                                <TextField
+                                                    onChange={(e) => handleNoteChange(classData.id, student.id, e.target.value)}
+                                                    onBlur={(e) => handleNoteBlur(classData.id, student.id, e.target.value)}
+                                                />
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </TableContainer>
                     </TabPanel>
+                ))}
                 <Box display="flex" justifyContent="center" mt={2}>
                     <Button variant="contained" color="secondary" onClick={handleLogout}>
                         Déconnexion
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handleValidation}>
+                        Valider notes
                     </Button>
                 </Box>
             </Box>

@@ -22,42 +22,44 @@ function LoginPage() {
     };
 
     return (
-        <Container maxWidth="sm">
-            <Box my={4}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    Nom de l'app
-                </Typography>
-                <Box my={2}>
-                    <TextField
-                        label="Login"
-                        fullWidth
-                        value={login}
-                        onChange={(e) => setLogin(e.target.value)}
-                        margin="normal"
-                    />
-                    <TextField
-                        label="Mot de passe"
-                        type="password"
-                        fullWidth
-                        value={mdp}
-                        onChange={(e) => setMdp(e.target.value)}
-                        margin="normal"
-                    />
-                    <Box display="flex" justifyContent="center" mt={2}>
-                        <Button variant="contained" color="primary" onClick={handleSubmit}>
-                            Valider
-                        </Button>
+        <div>
+            <Container maxWidth="sm">
+                <Box my={4}>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        Scolar Sphère
+                    </Typography>
+                    <Box my={2}>
+                        <TextField
+                            label="Login"
+                            fullWidth
+                            value={login}
+                            onChange={(e) => setLogin(e.target.value)}
+                            margin="normal"
+                        />
+                        <TextField
+                            label="Mot de passe"
+                            type="password"
+                            fullWidth
+                            value={mdp}
+                            onChange={(e) => setMdp(e.target.value)}
+                            margin="normal"
+                        />
+                        <Box display="flex" justifyContent="center" mt={2}>
+                            <Button variant="contained" color="primary" onClick={handleSubmit}>
+                                Valider
+                            </Button>
+                        </Box>
                     </Box>
                 </Box>
-            </Box>
-            <Box mt={4} display="flex" justifyContent="center">
-                <Typography variant="body1" align="center">
-                    <Button variant="text" color="primary" onClick={handleContactClick}>
-                        Contact
-                    </Button>
-                </Typography>
-            </Box>
-        </Container>
+                <Box mt={4} display="flex" justifyContent="center">
+                    <Typography variant="body1" align="center">
+                        <Button variant="text" color="primary" onClick={handleContactClick}>
+                            Contact
+                        </Button>
+                    </Typography>
+                </Box>
+            </Container>
+        </div>
     );
 }
 
