@@ -167,36 +167,80 @@ def get_eleve_notes():
 def ajouter_notes():
     data = request.json
     prof_id = data['prof_id']
-    classe_id = data['classe_id']
-    matiere_id = data['matiere_id']
-    notes = data['notes']  # Liste de dictionnaires avec 'eleve_id' et 'note'
-    commentaire = data.get('commentaire')
-
+    classe_nom = data['classe_id']  # Assuming classe_id is actually the class name
+    notes = data['notes']  # Liste de dictionnaires avec 'eleve_id', 'matiere' et 'note'
+    commentaires = data.get('commentaires', [])
+    
     bulletin_valide = query_db('''
         SELECT CheckPP FROM Bulletin
-        WHERE EleveID IN (SELECT ID FROM Eleve WHERE ClasseID = ?) AND CheckPP = 1
-    ''', [classe_id])
+        WHERE EleveID IN (SELECT ID FROM Eleve WHERE ClasseID = (SELECT ID FROM Classe WHERE Nom = ?)) AND CheckPP = 1
+    ''', "note", [classe_nom], one=True)
 
     if bulletin_valide:
-        logging.debug(
-            "Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
+        logging.debug("Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.")
         return jsonify({'erreur': 'Le bulletin a ete valide, les notes ne peuvent plus etre modifiees.'}), 403
 
     conn = get_notes_db()
     cur = conn.cursor()
 
     for note in notes:
-        eleve_id = note['eleve_id']
+        eleve_nom_complet = note['eleve_id']
+        matiere_nom = note['matiere']
         note_valeur = note['note']
+        
+        # Split the full name into first name and last name
+        eleve_prenom, eleve_nom = eleve_nom_complet.split(' ', 1)
+
+        # Get the EleveID
+        eleve = query_db('''
+            SELECT ID FROM Eleve WHERE Prenom = ? AND Nom = ?
+        ''', "note", [eleve_prenom, eleve_nom], one=True)
+        
+        if not eleve:
+            logging.debug(f"Élève non trouvé: {eleve_prenom} {eleve_nom}")
+            continue  # Skip this note if the student is not found
+
+        eleve_id = eleve['ID']
+
+        # Get the MatiereID
+        matiere = query_db('''
+            SELECT ID FROM Matiere WHERE Nom = ?
+        ''', "note", [matiere_nom], one=True)
+        
+        if not matiere:
+            logging.debug(f"Matière non trouvée: {matiere_nom}")
+            continue  # Skip this note if the subject is not found
+
+        matiere_id = matiere['ID']
+
         cur.execute('''
             INSERT INTO NoteEleve (EleveID, Notes, MatiereID, ProfID)
             VALUES (?, ?, ?, ?)
         ''', (eleve_id, note_valeur, matiere_id, prof_id))
-        if commentaire:
-            cur.execute('''
-                INSERT INTO Commentaire (EleveID, ProfID, MatiereID, Commentaire, Date)
-                VALUES (?, ?, ?, ?, datetime('now'))
-            ''', (eleve_id, prof_id, matiere_id, commentaire))
+
+    for commentaire in commentaires:
+        eleve_nom_complet = commentaire['eleve_id']
+        commentaire_texte = commentaire['commentaire']
+        
+        # Split the full name into first name and last name
+        eleve_prenom, eleve_nom = eleve_nom_complet.split(' ', 1)
+
+        # Get the EleveID
+        eleve = query_db('''
+            SELECT ID FROM Eleve WHERE Prenom = ? AND Nom = ?
+        ''', "note", [eleve_prenom, eleve_nom], one=True)
+        
+        if not eleve:
+            logging.debug(f"Élève non trouvé: {eleve_prenom} {eleve_nom}")
+            continue  # Skip this comment if the student is not found
+
+        eleve_id = eleve['ID']
+
+        # Assume the commentaire applies to all subjects for this student
+        cur.execute('''
+            INSERT INTO Commentaire (EleveID, ProfID, MatiereID, Commentaire, Date)
+            VALUES (?, ?, NULL, ?, datetime('now'))
+        ''', (eleve_id, prof_id, commentaire_texte))
 
     conn.commit()
     cur.close()
