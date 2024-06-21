@@ -75,7 +75,7 @@ function DashboardEleves() {
                 </Typography>
                 <Box display="flex" justifyContent="center" mt={2} mb={2}>
                     <Button variant="contained" color="secondary" onClick={handleFetchData}>
-                        Charger les données
+                        Mise à jour des notes
                     </Button>
                 </Box>
                 {isLoading && <div>Chargement...</div>}
